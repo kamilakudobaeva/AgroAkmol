@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroAqkol — прогноз урожая и риск засухи</title>
+<style>
+  :root {
+    --ink: #1d2a22;
+    --muted: #5d6b62;
+    --field: #2f5d3a;
+    --field-dark: #1f4229;
+    --straw: #c79a2b;
+    --dry: #a63d2a;
+    --ok: #6f9a5a;
+    --paper: #f2f4ef;
+    --card: #ffffff;
+    --line: #d9dfd6;
+    --focus: #1a5fb4;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  header {
+    background: var(--field-dark);
+    color: #f2f4ef;
+    padding: 20px 20px 22px;
+  }
+  header h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 1.6rem; font-weight: 700; letter-spacing: .2px; }
+  header p { margin: 4px 0 0; color: #c9d6cb; max-width: 60ch; }
+  main { max-width: 1080px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; grid-template-columns: 320px 1fr; align-items: start; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  section, form { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 18px; }
+  h2 { margin: 0 0 12px; font-size: 1.05rem; }
+  label { display: block; font-size: .9rem; color: var(--muted); margin-top: 12px; }
+  input, select, textarea {
+    width: 100%; margin-top: 4px; padding: 9px 10px; font: inherit; color: var(--ink);
+    border: 1px solid #b9c3b8; border-radius: 4px; background: #fff;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button {
+    font: inherit; cursor: pointer; border: 0; border-radius: 4px; padding: 10px 14px;
+    background: var(--field); color: #fff; font-weight: 600;
+  }
+  button:hover { background: var(--field-dark); }
+  button:disabled { opacity: .55; cursor: progress; }
+  form button { width: 100%; margin-top: 16px; }
+  .hint { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+  .right { display: grid; gap: 20px; }
+  .error { background: #fbeae6; border: 1px solid #e2b3a8; color: #7a2617; border-radius: 6px; padding: 12px 14px; }
+  .empty { color: var(--muted); }
+
+  /* прогноз */
+  .yield-num { font-family: Georgia, "Times New Roman", serif; font-size: 3.4rem; line-height: 1; font-weight: 700; color: var(--field-dark); }
+  .yield-unit { font-size: 1.1rem; color: var(--muted); margin-left: 6px; }
+  .meta { color: var(--muted); margin-top: 6px; }
+  .explain { margin: 14px 0 0; max-width: 70ch; }
+  .factors { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+  .factor { display: grid; grid-template-columns: 1fr 90px; gap: 10px; align-items: center; }
+  .factor .bar { height: 8px; background: #e6ebe3; border-radius: 4px; overflow: hidden; }
+  .factor .bar i { display: block; height: 100%; }
+  .factor .val { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+  .up { color: var(--field); } .down { color: var(--dry); }
+  .up-bg { background: var(--ok); } .down-bg { background: var(--dry); }
+
+  /* полоса риска */
+  .alert { margin-bottom: 12px; padding: 10px 12px; border-radius: 4px; font-weight: 600; }
+  .alert.on { background: #fbeae6; color: #7a2617; border: 1px solid #e2b3a8; }
+  .alert.off { background: #eaf3e6; color: #24491c; border: 1px solid #bcd6b1; }
+  .strip { display: grid; grid-template-columns: repeat(var(--n, 14), 1fr); gap: 4px; align-items: end; height: 170px; border-bottom: 2px solid var(--ink); position: relative; }
+  .strip .thr { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--muted); pointer-events: none; }
+  .strip button.col {
+    all: unset; cursor: pointer; display: flex; align-items: flex-end; height: 100%;
+  }
+  .strip button.col:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .strip button.col i { display: block; width: 100%; border-radius: 3px 3px 0 0; min-height: 4px; }
+  .strip button.col[aria-pressed="true"] i { box-shadow: 0 0 0 2px var(--ink); }
+  .labels { display: grid; grid-template-columns: repeat(var(--n, 14), 1fr); gap: 4px; font-size: .72rem; color: var(--muted); text-align: center; margin-top: 4px; min-height: 2.4em; }
+  .detail { margin-top: 12px; padding: 10px 12px; background: #f6f8f4; border-left: 4px solid var(--field); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .82rem; color: var(--muted); margin-top: 10px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; background: var(--c); }
+
+  /* чат */
+  .chat-log { max-height: 320px; overflow-y: auto; display: grid; gap: 8px; margin-bottom: 12px; }
+  .msg { padding: 8px 12px; border-radius: 6px; max-width: 85%; white-space: pre-wrap; }
+  .msg.user { background: var(--field); color: #fff; justify-self: end; }
+  .msg.bot { background: #eef2ec; justify-self: start; }
+  .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .chat-form input { margin: 0; }
+  #chatCard[hidden], #results[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AgroAqkol</h1>
+  <p>Прогноз урожайности и риск засухи, суховея и раннего заморозка по декадам для полей Акмолинской области.</p>
+</header>
+
+<main>
+  <form id="fieldForm">
+    <h2>Поле</h2>
+    <label>Название
+      <input id="name" required value="Поле 1">
+    </label>
+    <label>Район
+      <select id="district">
+        <option>Аккольский</option><option>Аршалынский</option><option>Астраханский</option>
+        <option>Атбасарский</option><option>Биржан сал</option><option>Буландынский</option>
+        <option>Бурабайский</option><option>Егиндыкольский</option><option>Ерейментауский</option>
+        <option>Есильский</option><option>Жаксынский</option><option>Жаркаинский</option>
+        <option>Зерендинский</option><option>Коргалжынский</option><option>Сандыктауский</option>
+        <option selected>Целиноградский</option><option>Шортандинский</option>
+      </select>
+    </label>
+    <label>Культура
+      <select id="crop">
+        <option>Пшеница</option>
+        <option>Зерновые и бобовые</option>
+      </select>
+    </label>
+    <label>Площадь, га
+      <input id="area" type="number" min="1" step="any" required value="500">
+    </label>
+    <div class="row">
+      <label>Широта
+        <input id="lat" type="number" step="any" required value="51.99">
+      </label>
+      <label>Долгота
+        <input id="lon" type="number" step="any" required value="70.95">
+      </label>
+    </div>
+    <p class="hint">Координаты поля нужны для погоды и почвы. Значения по умолчанию можно заменить.</p>
+    <button id="go" type="submit">Посчитать прогноз</button>
+  </form>
+
+  <div class="right">
+    <div id="error" class="error" role="alert" hidden></div>
+
+    <section id="placeholder">
+      <p class="empty">Заполните данные поля и нажмите «Посчитать прогноз». Загрузка погоды может занять до минуты.</p>
+    </section>
+
+    <div id="results" hidden class="right">
+      <section aria-labelledby="hYield">
+        <h2 id="hYield">Прогноз урожайности</h2>
+        <div><span class="yield-num" id="yieldNum">–</span><span class="yield-unit">т/га</span></div>
+        <div class="meta" id="yieldMeta"></div>
+        <p class="explain" id="explain" hidden></p>
+        <h2 style="margin-top:18px" id="hFactors">Что влияет сильнее всего</h2>
+        <ul class="factors" id="factors" aria-labelledby="hFactors"></ul>
+      </section>
+
+      <section aria-labelledby="hRisk">
+        <h2 id="hRisk">Риск по декадам сезона</h2>
+        <div id="alert" class="alert"></div>
+        <div class="strip" id="strip" role="group" aria-label="Риск по декадам"></div>
+        <div class="labels" id="labels"></div>
+        <div class="detail" id="detail" aria-live="polite"></div>
+        <div class="legend">
+          <span style="--c:var(--ok)">низкий, до 35%</span>
+          <span style="--c:var(--straw)">средний, 35–65%</span>
+          <span style="--c:var(--dry)">высокий, выше 65%</span>
+        </div>
+      </section>
+    </div>
+
+    <section id="chatCard" hidden aria-labelledby="hChat">
+      <h2 id="hChat">Вопрос по этому полю</h2>
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+      <form class="chat-form" id="chatForm" style="border:0;padding:0;background:none">
+        <input id="chatInput" placeholder="Например: когда самое опасное время для посевов?" aria-label="Ваш вопрос" required>
+        <button id="chatSend" type="submit">Спросить</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  // Если страницу отдаёт сам FastAPI — запросы идут на тот же адрес.
+  var API = location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+  var MONTHS = { "03": "мар", "04": "апр", "05": "май", "06": "июн", "07": "июл", "08": "авг", "09": "сен", "10": "окт", "11": "ноя" };
+  var THRESHOLD = 0.65;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fieldId = null, history = [], decades = [];
+
+  function showError(msg) { var e = $("error"); e.textContent = msg; e.hidden = !msg; }
+
+  async function api(path, opts) {
+    var res = await fetch(API + path, opts);
+    var data = null;
+    try { data = await res.json(); } catch (e) { /* не JSON */ }
+    if (!res.ok) {
+      var d = data && data.detail;
+      var text = typeof d === "string" ? d : d ? JSON.stringify(d) : res.status + " " + res.statusText;
+      throw new Error(path + ": " + text);
+    }
+    return data;
+  }
+
+  function riskColor(v) { return v > THRESHOLD ? "var(--dry)" : v >= 0.35 ? "var(--straw)" : "var(--ok)"; }
+  function pct(v) { return Math.round((v || 0) * 100) + "%"; }
+  function num(v, d) { return Number(v).toFixed(d === undefined ? 2 : d); }
+
+  function decadeName(label) {
+    var m = /^(\d{2})-D(\d)$/.exec(label || "");
+    return m ? (MONTHS[m[1]] || m[1]) + ", " + m[2] + "-я декада" : label;
+  }
+
+  function renderYield(p) {
+    $("yieldNum").textContent = num(p.yield_t_ha);
+    var ci = p.confidence_interval || [];
+    var parts = [];
+    if (ci.length === 2) parts.push("Интервал: " + num(ci[0]) + " – " + num(ci[1]) + " т/га");
+    if (p.season) parts.push("сезон " + p.season);
+    $("yieldMeta").textContent = parts.join(", ");
+
+    var text = p.explanation || p.text_explanation || p.summary || "";
+    $("explain").textContent = text;
+    $("explain").hidden = !text;
+
+    var ul = $("factors"); ul.innerHTML = "";
+    var f = p.top_factors || [];
+    var max = Math.max.apply(null, f.map(function (x) { return Math.abs(x.impact); }).concat([0.0001]));
+    f.forEach(function (x) {
+      var up = x.direction === "up";
+      var li = document.createElement("li"); li.className = "factor";
+      var left = document.createElement("div");
+      var nm = document.createElement("div"); nm.textContent = x.name;
+      var bar = document.createElement("div"); bar.className = "bar";
+      var fill = document.createElement("i"); fill.className = up ? "up-bg" : "down-bg";
+      fill.style.width = Math.max(4, Math.abs(x.impact) / max * 100) + "%";
+      bar.appendChild(fill); left.appendChild(nm); left.appendChild(bar);
+      var val = document.createElement("div"); val.className = "val " + (up ? "up" : "down");
+      val.textContent = (up ? "+" : "−") + num(Math.abs(x.impact)) + " т/га";
+      li.appendChild(left); li.appendChild(val); ul.appendChild(li);
+    });
+  }
+
+  function selectDecade(i) {
+    var d = decades[i]; if (!d) return;
+    Array.prototype.forEach.call($("strip").querySelectorAll("button.col"), function (b, j) {
+      b.setAttribute("aria-pressed", j === i ? "true" : "false");
+    });
+    $("detail").textContent = decadeName(d.decade_label) + ": риск " + pct(d.risk_score) +
+      " (засуха " + pct(d.drought) + ", суховей " + pct(d.sukhovei) + ", заморозок " + pct(d.frost) + "). " + (d.note || "");
+  }
+
+  function renderRisk(r) {
+    decades = r.decades || [];
+    var a = $("alert");
+    a.className = "alert " + (r.alert ? "on" : "off");
+    a.textContent = r.alert
+      ? "Есть декады с высоким риском (выше " + Math.round(THRESHOLD * 100) + "%)."
+      : "Высокого риска в сезоне не ожидается.";
+
+    var strip = $("strip"), labels = $("labels");
+    strip.style.setProperty("--n", decades.length); labels.style.setProperty("--n", decades.length);
+    strip.innerHTML = ""; labels.innerHTML = "";
+    var thr = document.createElement("div"); thr.className = "thr"; thr.style.bottom = (THRESHOLD * 100) + "%";
+    strip.appendChild(thr);
+
+    var worst = 0;
+    decades.forEach(function (d, i) {
+      if (d.risk_score > decades[worst].risk_score) worst = i;
+      var b = document.createElement("button"); b.type = "button"; b.className = "col";
+      b.setAttribute("aria-label", decadeName(d.decade_label) + ", риск " + pct(d.risk_score));
+      b.setAttribute("aria-pressed", "false");
+      var bar = document.createElement("i");
+      bar.style.height = Math.max(2, d.risk_score * 100) + "%"; bar.style.background = riskColor(d.risk_score);
+      b.appendChild(bar);
+      b.addEventListener("click", function () { selectDecade(i); });
+      strip.appendChild(b);
+
+      var m = /^(\d{2})-D(\d)$/.exec(d.decade_label || "");
+      var l = document.createElement("div");
+      l.textContent = m ? m[2] + (m[2] === "1" ? "\n" + (MONTHS[m[1]] || m[1]) : "") : "";
+      l.style.whiteSpace = "pre-line";
+      labels.appendChild(l);
+    });
+    if (decades.length) selectDecade(worst);
+  }
+
+  function addMsg(text, who) {
+    var m = document.createElement("div"); m.className = "msg " + who; m.textContent = text;
+    $("chatLog").appendChild(m); $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  }
+
+  $("fieldForm").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    showError("");
+    var btn = $("go"); btn.disabled = true; btn.textContent = "Считаем…";
+    try {
+      var created = await api("/fields", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: $("name").value, district: $("district").value, crop: $("crop").value,
+          area_ha: parseFloat($("area").value),
+          latitude: parseFloat($("lat").value), longitude: parseFloat($("lon").value)
+        })
+      });
+      fieldId = created.field_id;
+      var out = await Promise.all([api("/predict/" + fieldId), api("/risk/" + fieldId)]);
+      renderYield(out[0]); renderRisk(out[1]);
+      $("placeholder").hidden = true; $("results").hidden = false; $("chatCard").hidden = false;
+      history = []; $("chatLog").innerHTML = "";
+    } catch (e) {
+      showError("Не удалось получить данные. " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Посчитать прогноз";
+    }
+  });
+
+  $("chatForm").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    var q = $("chatInput").value.trim(); if (!q || !fieldId) return;
+    $("chatInput").value = ""; addMsg(q, "user");
+    var btn = $("chatSend"); btn.disabled = true;
+    try {
+      var r = await api("/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field_id: fieldId, message: q, history: history })
+      });
+      addMsg(r.reply, "bot");
+      history.push({ role: "user", content: q }, { role: "assistant", content: r.reply });
+    } catch (e) {
+      addMsg("Чат недоступен: " + e.message, "bot");
+    } finally { btn.disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "fcdbd3b33522": {
+    "name": "Тестовое поле",
+    "district": "Целиноградский",
+    "latitude": 51.2,
+    "longitude": 71.45,
+    "crop": "Пшеница",
+    "area_ha": 150.0
+  },
+  "e3e5a66fb5e6": {
+    "name": "Тестовое поле",
+    "district": "Целиноградский",
+    "latitude": 51.2,
+    "longitude": 71.45,
+    "crop": "Пшеница",
+    "area_ha": 150.0
+  },
+  "63b58784ce69": {
+    "name": "Тестовое поле",
+    "district": "Целиноградский",
+    "latitude": 51.1,
+    "longitude": 71.4,
+    "crop": "Пшеница",
+    "area_ha": 100.0
+  },
+  "d1a8efed1589": {
+    "name": "Тестовое поле",
+    "district": "Целиноградский",
+    "latitude": 51.1,
+    "longitude": 71.4,
+    "crop": "Пшеница",
+    "area_ha": 100.0
+  },
+  "2e74e906820e": {
+    "name": "Поле 2",
+    "district": "Целиноградский",
+    "latitude": 51.99,
+    "longitude": 70.95,
+    "crop": "Пшеница",
+    "area_ha": 500.0
+  },
+  "af7b78339a69": {
+    "name": "Поле 3",
+    "district": "Аршалынский",
+    "latitude": 51.99,
+    "longitude": 70.95,
+    "crop": "Пшеница",
+    "area_ha": 500.0
+  },
+  "1a58736333bc": {
+    "name": "Поле",
+    "district": "Астраханский",
+    "latitude": 61.99,
+    "longitude": 50.93,
+    "crop": "Зерновые и бобовые",
+    "area_ha": 150.0
+  }
+}

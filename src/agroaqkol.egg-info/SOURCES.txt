@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/agroaqkol.egg-info/PKG-INFO
+src/agroaqkol.egg-info/SOURCES.txt
+src/agroaqkol.egg-info/dependency_links.txt
+src/agroaqkol.egg-info/requires.txt
+src/agroaqkol.egg-info/top_level.txt
+src/crop_yield_prediction/__init__.py
+src/crop_yield_prediction/fields.py
+src/crop_yield_prediction/predict.py
+src/crop_yield_prediction/risk.py
+src/crop_yield_prediction/data/__init__.py
+src/crop_yield_prediction/data/akmola_sources.py
